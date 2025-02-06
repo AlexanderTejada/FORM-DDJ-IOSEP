@@ -2,9 +2,6 @@
 import { ref, watch } from "vue";
 import jsPDF from "jspdf";
 
-// URL del logo
-const logoUrl = "https://app.iosep.gob.ar/Iosep/Content/Imagenes/logo__01Ar.png";
-
 const steps = ref([
   { id: 1, title: "1", fields: [
       { label: "Apellido y Nombre", type: "text", name: "apellido_nombre" },
@@ -38,40 +35,49 @@ watch(formData, (newData) => {
   localStorage.setItem("formData", JSON.stringify(newData));
 }, { deep: true });
 
-const getBase64Image = async (url) => {
-  try {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.readAsDataURL(blob);
-    });
-  } catch (error) {
-    console.error("Error al convertir la imagen a Base64:", error);
-    return null;
-  }
-};
-
-const generatePDF = async () => {
+const generatePDF = () => {
   const doc = new jsPDF();
-  const logoBase64 = await getBase64Image(logoUrl);
 
-  if (logoBase64) {
-    doc.addImage(logoBase64, "PNG", 10, 10, 50, 20);
-  } else {
-    console.warn("No se pudo cargar el logo, se generará el PDF sin él.");
+  // Estilo del título
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(24);
+  doc.setTextColor(30, 144, 255); // Azul degradado
+  doc.text("Declaración Jurada del Afiliado", 15, 20);
+
+  // Línea separadora
+  doc.setDrawColor(100, 100, 100);
+  doc.line(15, 25, 195, 25);
+
+  // Espaciado para los datos
+  let y = 35;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(12);
+  doc.setTextColor(0, 0, 0); // Texto negro
+
+  // Agrupar datos en dos columnas
+  const keys = Object.keys(formData.value);
+  const mitad = Math.ceil(keys.length / 2);
+
+  for (let i = 0; i < mitad; i++) {
+    const keyLeft = keys[i].replace(/_/g, " ");
+    const valueLeft = formData.value[keys[i]] || "-";
+    const keyRight = keys[i + mitad] ? keys[i + mitad].replace(/_/g, " ") : "";
+    const valueRight = keys[i + mitad] ? formData.value[keys[i + mitad]] || "-" : "";
+
+    doc.text(`${keyLeft}:`, 15, y);
+    doc.text(`${valueLeft}`, 65, y);
+
+    if (keyRight) {
+      doc.text(`${keyRight}:`, 110, y);
+      doc.text(`${valueRight}`, 160, y);
+    }
+
+    y += 10;
   }
 
-  doc.setFontSize(16);
-  doc.text("Declaración Jurada del Afiliado", 70, 20);
-
-  let y = 40;
-  doc.setFontSize(12);
-  Object.keys(formData.value).forEach((key) => {
-    doc.text(`${key.replace(/_/g, " ")}: ${formData.value[key] || "-"}`, 10, y);
-    y += 10;
-  });
+  // Línea final separadora
+  doc.setDrawColor(100, 100, 100);
+  doc.line(15, y, 195, y);
 
   doc.save("declaracion_jurada.pdf");
 };
@@ -79,9 +85,6 @@ const generatePDF = async () => {
 
 <template>
   <div class="max-w-2xl mx-auto p-6 shadow-lg rounded-xl bg-white w-full min-h-[600px] flex flex-col justify-between border">
-    <div class="flex justify-center mb-4">
-      <img :src="logoUrl" alt="Logo" class="h-16">
-    </div>
     <h1 class="text-2xl font-bold text-center bg-gradient-to-r from-blue-500 to-green-500 text-transparent bg-clip-text mb-4">
       Declaración Jurada del Afiliado
     </h1>
