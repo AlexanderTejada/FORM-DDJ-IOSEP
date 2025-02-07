@@ -71,9 +71,9 @@
     </div>
   </div>
 </template>
-
 <script setup>
 import { ref, watch } from "vue";
+import jsPDF from "jspdf";
 
 const currentStep = ref(0);
 const formData = ref(JSON.parse(localStorage.getItem("formData")) || {});
@@ -133,12 +133,94 @@ const groupedFields = ref([
   }
 ]);
 
+// Función para generar PDF
+const generatePDF = async () => {
+  const doc = new jsPDF();
+
+  // Agregar Logo
+  const img = new Image();
+  img.src = "src/components/image.png"; // Ruta de la imagen
+  doc.addImage(img, "PNG", 10, 10, 50, 20);
+
+  // Agregar Título con Cinta de Color
+  doc.setFillColor(33, 150, 243); // Azul tipo seguro médico
+  doc.rect(10, 35, 190, 10, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(16);
+  doc.setFont("bold");
+  doc.text("DECLARACIÓN JURADA DE AFILIADO", 60, 42);
+
+  // Estilo de los datos
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(12);
+  doc.setFont("normal");
+
+  let y = 55; // Posición vertical inicial
+  groupedFields.value.forEach((section) => {
+    if (y > 270) {
+      doc.addPage();
+      y = 10;
+    }
+
+    // Títulos de las secciones
+    doc.setFontSize(13);
+    doc.setFont("bold");
+    doc.setTextColor(50, 50, 50);
+    doc.text(section.title, 15, y);
+    doc.setDrawColor(0, 0, 0);
+    doc.line(15, y + 2, 195, y + 2); // Línea separadora
+    y += 7;
+
+    // Datos organizados en filas con colores
+    doc.setFontSize(12);
+    doc.setFont("normal");
+    doc.setTextColor(80, 80, 80);
+    
+    section.fields.forEach((field, index) => {
+      if (y > 270) {
+        doc.addPage();
+        y = 10;
+      }
+      
+      // Alternar color de fondo para cada fila
+      if (index % 2 === 0) {
+        doc.setFillColor(240, 240, 240); // Gris claro
+        doc.rect(15, y - 4, 180, 7, "F");
+      }
+
+      // Etiqueta
+      doc.setFont("bold");
+      doc.text(`${field.label}:`, 20, y);
+      
+      // Respuesta (sin línea debajo)
+      doc.setFont("normal");
+      doc.text(`${formData.value[field.name] || "-"}`, 90, y);
+      
+      y += 8;
+    });
+
+    y += 5;
+  });
+
+  // Firmas al final
+  y = y < 240 ? 240 : y + 20;
+  doc.setFontSize(12);
+  doc.setFont("bold");
+  doc.line(20, y + 5, 80, y + 5); // Línea de firma
+
+  doc.text("Firma", 20, y);
+
+  // Descargar PDF
+  doc.save("declaracion_jurada.pdf");
+};
+
+const handleNext = () => currentStep.value++;
+const handlePrev = () => currentStep.value--;
+
 watch(formData, (newData) => {
   localStorage.setItem("formData", JSON.stringify(newData));
 }, { deep: true });
 
-const handleNext = () => currentStep.value++;
-const handlePrev = () => currentStep.value--;
 </script>
 
 
