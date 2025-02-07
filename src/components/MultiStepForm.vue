@@ -139,7 +139,7 @@ const generatePDF = async () => {
 
   // Agregar Logo
   const img = new Image();
-  img.src = "src/components/image.png"; // Ruta de la imagen
+  img.src = "/image.png"; // Si la imagen está en la carpeta `public` en Next.js o Vue
   doc.addImage(img, "PNG", 10, 10, 50, 20);
 
   // Agregar Título con Cinta de Color
